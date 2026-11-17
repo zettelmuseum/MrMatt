@@ -1,0 +1,84 @@
+name: Extract MrMatt ZIP
+
+on:
+  push:
+    paths:
+      - "MrMatt.zip"
+      - ".github/workflows/extract-mrmatt.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate and extract archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f MrMatt.zip
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          from zipfile import ZipFile
+          import shutil
+
+          archive = Path("MrMatt.zip")
+          target = Path(".").resolve()
+          staging = Path("/tmp/mrmatt-extract")
+          if staging.exists():
+              shutil.rmtree(staging)
+          staging.mkdir(parents=True)
+
+          with ZipFile(archive) as zf:
+              entries = zf.infolist()
+              if not entries:
+                  raise SystemExit("Archive is empty")
+              for info in entries:
+                  name = info.filename
+                  p = PurePosixPath(name)
+                  if p.is_absolute() or ".." in p.parts:
+                      raise SystemExit(f"Unsafe archive path: {name}")
+                  if not p.parts:
+                      continue
+                  # Do not allow the archive to overwrite repository metadata or itself.
+                  if p.parts[0] in {".git", ".github"} or name == "MrMatt.zip":
+                      raise SystemExit(f"Refusing to overwrite protected path: {name}")
+                  mode = info.external_attr >> 16
+                  if (mode & 0o170000) == 0o120000:
+                      raise SystemExit(f"Symlink entry not allowed: {name}")
+              zf.extractall(staging)
+
+          for item in staging.iterdir():
+              destination = target / item.name
+              if destination.exists():
+                  if destination.is_dir() and item.is_dir():
+                      shutil.copytree(item, destination, dirs_exist_ok=True)
+                  elif destination.is_file() and item.is_file():
+                      shutil.copy2(item, destination)
+                  else:
+                      raise SystemExit(f"File/directory conflict at {destination}")
+              else:
+                  shutil.move(str(item), str(destination))
+
+          print(f"Extracted {len(entries)} archive entries")
+          PY
+
+      - name: Commit extracted project files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- .
+          git reset -- MrMatt.zip .github/workflows/extract-mrmatt.yml
+          if git diff --cached --quiet; then
+            echo "No extracted changes to commit."
+            exit 0
+          fi
+          git commit -m "Extract MrMatt.zip into repository"
+          git push
