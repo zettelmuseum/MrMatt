@@ -1,92 +1,77 @@
-# Mr. Matt – Rekonstruktion für Android (AIDE, Java 7)
+# Mr. Matt – Reconstruction for Android (AIDE, Java 7)
 
-Neuimplementierung des alten Shareware-Spiels *Mr. Matt* (J. Andrzej Wrotniak). Die Spiellogik wurde
-aus den Level-Dateien (`.mat`) und den Lösungsreplays (`mrmatt.sol`) rekonstruiert.
+Reimplementation of the old shareware game *Mr. Matt* (J. Andrzej Wrotniak). The game logic was reconstructed from the level files (`.mat`) and solution replays (`mrmatt.sol`).
 
-**Prüfstand:** Alle **3885 Lösungsreplays** der 767 mitgelieferten Spiele werden von der Engine
-fehlerfrei bis zum Sieg abgespielt (auch die Schrittzahlen stimmen). Das Kriterium „Engine korrekt =
-jedes Replay gewinnt“ ist damit erfüllt:
+**Verification status:** All **3,885 solution replays** for the 767 included games are played by the engine without errors, all the way to victory (the move counts also match). This satisfies the criterion “engine is correct = every replay wins”:
 
 ```
 $ tools/run.sh Verify assets
 ok=3885 bad=0 {}
 ```
 
-## In AIDE öffnen
+## Open in AIDE
 
-1. ZIP entpacken, den Ordner `MrMatt` z. B. nach `/sdcard/AppProjects/` kopieren.
-2. In AIDE: *Open Project* → `MrMatt` (enthält `AndroidManifest.xml`, `src/`, `res/`, `assets/`).
-3. *Build & Run*. Voraussetzungen: Java 7, Android-API ≥ 14 (`project.properties`: `target=android-19`),
-   keine Support-Bibliotheken, kein Gradle nötig.
+1. Extract the ZIP archive and copy the `MrMatt` folder, for example, to `/sdcard/AppProjects/`.
+2. In AIDE: *Open Project* → `MrMatt` (contains `AndroidManifest.xml`, `src/`, `res/`, and `assets/`).
+3. *Build & Run*. Requirements: Java 7, Android API ≥ 14 (`project.properties`: `target=android-19`), no support libraries, and no Gradle required.
 
-Die App-Oberfläche wurde ohne Android-SDK entwickelt: Sie ist gegen Stubs der verwendeten Android-API
-typgeprüft, aber **nicht auf einem Gerät ausprobiert**. Engine, Undo und Replay-Wiedergabe laufen dagegen
-vollständig getestet auf der JVM.
+The app interface was developed without the Android SDK: it was type-checked against stubs of the Android APIs used, but **has not been tested on a device**. The engine, undo, and replay playback, on the other hand, have been fully tested on the JVM.
 
-## Bedienung
+## Controls
 
-* **Startseite:** Spieleliste mit Suche und Filter nach Schwierigkeit (1–4 Sterne), dann Levelauswahl.
-  Gelöste Level werden grün markiert (mit bester Schrittzahl).
-* **Spielfeld:** auf dem Feld wischen/ziehen, in Matts Zeile oder Spalte tippen (Matt rennt dorthin),
-  Steuerkreuz unten rechts, Pfeiltasten oder WASD. Home/Ende/Bild↑/Bild↓ laufen bis zum Hindernis.
-* **Zurück** (Backspace): bis zu 200 Schritte, auch nach dem Tod. **Neustart:** Leertaste/Esc.
-* **Lösung:** spielt die kürzeste gespeicherte Lösung ab (Pause, Tempo 1x … max im Menü).
-  Ein eigener Zug beendet die Wiedergabe; mit Lösungshilfe gespielte Level zählen nicht als gelöst.
-* **Menü:** nächstes/voriges Level, „Keine dummen Züge“ (verweigert Züge, die Matt töten), Animation,
-  Steuerkreuz ein/aus, Spielregeln.
+* **Home screen:** Game list with search and difficulty filter (1–4 stars), followed by level selection. Solved levels are marked in green (with the best move count).
+* **Game board:** Swipe/drag on the board; tap in Matt's row or column (Matt runs there); use the D-pad at the bottom right, arrow keys, or WASD. Home/End/Page Up/Page Down move until an obstacle is reached.
+* **Undo** (Backspace): up to 200 moves, including after death. **Restart:** Space/Esc.
+* **Solution:** Plays the shortest stored solution (pause and speed from 1x up to maximum in the menu). Any move of your own ends playback; levels played with the solution aid do not count as solved.
+* **Menu:** Next/previous level, “No stupid moves” (rejects moves that would kill Matt), animation, D-pad on/off, game rules.
 
-## Rekonstruierte Spielregeln
+## Reconstructed game rules
 
-| Element | Verhalten |
+| Element | Behavior |
 |---|---|
-| Matt | läuft in leere Felder, gräbt Erde, frisst Äpfel; schiebt **ein** Objekt waagerecht, wenn dahinter Platz ist; kein senkrechtes Schieben; unmögliche Züge zählen nicht |
-| Sieg | sobald der letzte Apfel gefressen ist (sofort, noch vor der Physik) |
-| Physik | nach jedem Zug läuft alles komplett durch; Objekte werden von unten nach oben, je Zeile von links nach rechts abgearbeitet, jedes fällt dabei vollständig; wiederholt bis Ruhe |
-| Fallen | Stein, Bombe, Kiste fallen, solange darunter frei ist; fällt etwas auf Matt, stirbt er (liegende Objekte über ihm sind harmlos) |
-| Rollen | ein *gefallenes* Objekt (Stein/Kiste), das auf einem **Stein** landet, rollt seitlich, wenn dort frei ist und darunter frei oder eine Kiste ist |
-| Rollrichtung | rollte das Objekt in diesem Durchgang schon, rollt es in dieselbe Richtung weiter; sonst in Richtung von Matts letztem Zug; ist die Seite blockiert, wird die andere versucht |
-| Kiste | verschluckt jedes hineinfallende **oder hineingeschobene** Objekt (auch Bomben/Kisten); nach 3 Treffern verschwindet sie |
-| Bombe | fällt sie auf Stein/Bombe, verschwinden beide; auf Wand verschwindet sie allein; auf Erde/Boden nichts; eine geschobene Bombe explodiert nicht |
-| Weckregel | nur Objekte, die „geweckt“ wurden, werden bewegt (über einem frei gewordenen Feld, geschobenes Objekt). Anfangs schwebende Steine fallen daher erst, wenn darunter etwas frei wird |
+| Matt | Moves into empty cells, digs dirt, eats apples; pushes **one** object horizontally if there is room behind it; cannot push vertically; impossible moves do not count |
+| Victory | As soon as the last apple is eaten (immediately, before physics) |
+| Physics | After every move, all physics are processed completely; objects are processed from bottom to top, and from left to right within each row, with each object falling all the way; this is repeated until everything is at rest |
+| Falling | Rocks, bombs, and crates fall while the cell below is empty; if an object falls onto Matt, he dies (objects resting above him are harmless) |
+| Rolling | An object (rock/crate) that has *fallen* and lands on a **rock** rolls sideways if that side is clear and the cell below is empty or contains a crate |
+| Rolling direction | If the object has already rolled during this pass, it continues in the same direction; otherwise, it rolls toward the direction of Matt's last move; if that side is blocked, the other side is tried |
+| Crate | Swallows any object that falls or is pushed **into it** (including bombs/crates); disappears after 3 hits |
+| Bomb | If it falls onto a rock/bomb, both disappear; on a wall, only the bomb disappears; on dirt/floor, nothing happens; a pushed bomb does not explode |
+| Wake-up rule | Only objects that have been “woken up” are moved (above a cell that has become empty, or an object that has been pushed). Therefore, rocks that are floating at the beginning only fall once something below them becomes empty |
 
-Die Rollrichtung war der schwierigste Teil: Mit fester „links zuerst“-Regel gewannen nur 3346 Replays,
-„Richtung zu Matt“ brachte 3514, „Richtung von Matts letztem Zug“ 3719, und erst die zusätzliche
-Schwung-Regel pro Objekt ergab 3885/3885.
+Rolling direction was the most difficult part: with a fixed “left first” rule, only 3,346 replays won; “direction toward Matt” brought this to 3,514; “direction of Matt's last move” to 3,719; only the additional momentum rule per object achieved 3,885/3,885.
 
-### Was die Replays nicht belegen (Annahmen)
+### What the replays do not establish (assumptions)
 
-* Nach senkrechten Zügen bevorzugt die Engine links; die Replays unterscheiden das nicht.
-* Mehrere Objekte hintereinander schieben und Objekte senkrecht schieben kommen in keinem Replay vor
-  (blockierte Züge werden nicht aufgezeichnet). Hier gilt die Hilfedatei: genau ein Objekt, nur seitlich.
-* Rollen von Kisten oder Bomben ab Kisten ist unerreichbar (Kisten verschlucken landende Objekte).
+* After vertical moves, the engine prefers left; the replays do not distinguish this.
+* Pushing several objects in a row and pushing objects vertically do not occur in any replay (blocked moves are not recorded). The help file is followed here: exactly one object, horizontally only.
+* Rolling of crates or bombs off crates is unreachable (crates swallow objects that land on them).
 
-## Projektaufbau
+## Project structure
 
 ```
-AndroidManifest.xml, project.properties, res/    Android-Projekt (klassisches AIDE/ADT-Layout)
-assets/mat/g001..g767.mat                        Level-Dateien (Dateinamen vereinfacht, Titel stehen in index.txt)
-assets/index.txt, mdecrypt.txt, mrmatt.sol       Spieleliste, Entschlüsselungstabelle, Lösungsreplays
-src/de/mrmatt/game/                              reine Java-Logik (ohne Android)
-    Engine.java        Regeln + Ereignisliste für die Animation + Snapshots
-    GameSession.java   Engine + Undo (200) + Lösungswiedergabe
-    GameParser.java    .mat lesen und entschlüsseln (Klartext-Dateien werden erkannt)
-    Replay.java        .sol lesen, RLE dekodieren
+AndroidManifest.xml, project.properties, res/    Android project (classic AIDE/ADT layout)
+assets/mat/g001..g767.mat                        Level files (simplified filenames; titles are in index.txt)
+assets/index.txt, mdecrypt.txt, mrmatt.sol       Game list, decryption table, solution replays
+src/de/mrmatt/game/                              Pure Java logic (no Android dependency)
+    Engine.java        Rules + event list for animation + snapshots
+    GameSession.java   Engine + undo (200) + solution playback
+    GameParser.java    Read and decrypt .mat files (plain-text files are detected)
+    Replay.java        Read .sol files, decode RLE
     Level.java, Game.java
-src/de/mrmatt/app/                               Android-Oberfläche
+src/de/mrmatt/app/                               Android interface
     GameListActivity, LevelListActivity, PlayActivity
-    BoardView (Spielfeld, Animation, Wischen), DpadView, Tiles (Kacheln per Canvas)
+    BoardView (board, animation, swiping), DpadView, Tiles (Canvas-based tiles)
     Repository, Progress, GameInfo, Ui
-tools/                                           JVM-Werkzeuge (kein Android nötig)
-    run.sh      kompiliert und startet:  tools/run.sh Verify assets
-    Verify      alle Replays prüfen (+ Animationsereignisse + Schrittzahlen)
-    SessionTest Undo/Replay-Sitzung prüfen
-    Dbg         Brettzustände eines Replays ausgeben:  tools/run.sh Dbg assets "Marks" 1 90 93
-    MakeIndex   assets/index.txt neu erzeugen
+tools/                                           JVM tools (no Android required)
+    run.sh      Compiles and runs:  tools/run.sh Verify assets
+    Verify      Verify all replays (+ animation events + move counts)
+    SessionTest Test undo/replay sessions
+    Dbg         Print replay board states:  tools/run.sh Dbg assets "Marks" 1 90 93
+    MakeIndex   Regenerate assets/index.txt
 ```
 
-## Dateiformate (kurz)
+## File formats (brief)
 
-* **.mat:** Kopfzeilen (Titel mit Sternen, Autor, Code), dann je Level Name + 18 Zeilen × 31 Zeichen.
-  Entschlüsselt wird zeichenweise über `mdecrypt.txt` (7 Feldtypen × 18 × 31); passt ein Zeichen zu
-  keinem Typ, steht dort Matt. Einige Dateien liegen im Klartext vor.
-* **.sol:** `<Level><A–D> <Schritte> <Spieler>|<Spiel>|<RLE-Züge> <Prüfzahl>`, Züge `L R U D`.
+* **.mat:** Header lines (title with stars, author, code), followed by each level's name + 18 rows × 31 characters. Decryption is performed character by character using `mdecrypt.txt` (7 field types × 18 × 31); if a character does not match any type, it represents Matt. Some files are already plain text.
+* **.sol:** `<Level><A–D> <Moves> <Player>|<Game>|<RLE moves> <Checksum>`, moves `L R U D`.
