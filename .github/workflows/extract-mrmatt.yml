@@ -5,6 +5,8 @@ on:
     paths:
       - "MrMatt.zip"
       - ".github/workflows/extract-mrmatt.yml"
+  schedule:
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
