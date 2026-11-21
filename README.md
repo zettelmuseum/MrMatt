@@ -1,3 +1,13 @@
+UPDATE:
+HTML Version available here:
+
+https://zettelmuseum.github.io/MrMatt/
+
+This is a single, self-contained 1MB html file.
+3885 levels with solutions.
+Note that you can adjust the zoom level from the menu.
+
+
 This is the turn-based Boulderdash-Like
 Mr.Matt by Andrzej Wrotniak, ported to Android.
 3,885 levels and solution replays, all tested
