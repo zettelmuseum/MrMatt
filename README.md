@@ -7,6 +7,7 @@ This is a single, self-contained 1MB html file.
 3885 levels with solutions.
 Note that you can adjust the zoom level from the menu.
 
+![Mr.Matt](mrmatt.gif)
 
 This is the turn-based Boulderdash-Like game 
 Mr.Matt by Andrzej Wrotniak, ported to Android.
